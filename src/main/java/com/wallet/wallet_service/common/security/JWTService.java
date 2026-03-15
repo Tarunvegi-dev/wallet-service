@@ -1,12 +1,14 @@
 package com.wallet.wallet_service.common.security;
 
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.util.Date;
+
+import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -19,7 +21,7 @@ public class JWTService {
     @Value("${jwt.token.expiration}")
     private Long expirationTime;
 
-    private Key getKey(){
+    private SecretKey getKey(){
         return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -30,5 +32,26 @@ public class JWTService {
                    .setIssuedAt(new Date())
                    .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                    .compact();
+    }
+
+    private Claims extractAlClaims(String token){
+        return Jwts.parser()
+                    .verifyWith(getKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+    }
+
+    public String extractUserId(String token){
+        return extractAlClaims(token).getSubject();
+    }
+
+    public Date extractExpirationTime(String token){
+        return extractAlClaims(token).getExpiration();
+    }
+
+    public Boolean validateToken(String token){
+        Date expDate = extractExpirationTime(token);
+        return expDate.after(new Date());
     }
 }

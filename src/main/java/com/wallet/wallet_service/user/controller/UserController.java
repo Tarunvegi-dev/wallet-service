@@ -1,7 +1,5 @@
 package com.wallet.wallet_service.user.controller;
 
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +12,9 @@ import com.wallet.wallet_service.user.dto.LoginResponse;
 import com.wallet.wallet_service.user.dto.SignupRequest;
 import com.wallet.wallet_service.user.dto.SignupResponse;
 import com.wallet.wallet_service.user.service.UserService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,6 +33,4 @@ public class UserController
     public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest loginRequest) {
         return ResponseEntity.status(HttpStatus.OK).body(userService.login(loginRequest));
     }
-
-
 }
