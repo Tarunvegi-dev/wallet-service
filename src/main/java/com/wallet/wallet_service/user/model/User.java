@@ -19,11 +19,20 @@ public class User
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long userId;
+
+    @Column(nullable = false, unique = true)
     String email;
+
+    @Column(nullable = false)
     String password;
+
+    @Column(nullable = false)
     String name;
+
+    @Column(nullable = false)
     String mobileNumber;
 
+    @Column(nullable = false)
     @CreationTimestamp
     Instant createdAt;
 

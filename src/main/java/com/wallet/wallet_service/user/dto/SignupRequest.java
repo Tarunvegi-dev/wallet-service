@@ -1,4 +1,4 @@
-package com.wallet.wallet_service.user.model;
+package com.wallet.wallet_service.user.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -8,7 +8,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @AllArgsConstructor
 @NoArgsConstructor
-public class SignupRequestDTO
+public class SignupRequest
 {
     @Email(message = "Provided Email is invalid")
     @NotNull

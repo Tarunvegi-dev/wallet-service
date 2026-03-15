@@ -3,6 +3,7 @@ package com.wallet.wallet_service.common.exception.advices;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.wallet.wallet_service.common.dto.ApiErrorDTO;
+import com.wallet.wallet_service.common.exception.InvalidCredentialsException;
 import com.wallet.wallet_service.common.exception.UserAlreadyExistsException;
 
 import org.springframework.http.HttpStatus;
@@ -41,6 +42,18 @@ public class GlobalExceptionHandler
 
         return new ResponseEntity<>(apiErrorDTO, HttpStatus.CONFLICT);
     }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiErrorDTO> handleInvalidCredentialsException(InvalidCredentialsException e){
+        apiErrorDTO = ApiErrorDTO.builder()
+                    .subErrors(lstErrors)
+                    .message(e.getMessage())
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .build();
+                    
+        return new ResponseEntity<>(apiErrorDTO, HttpStatus.UNAUTHORIZED);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorDTO> handleMethodArgumentNotValidException(MethodArgumentNotValidException e)
     {

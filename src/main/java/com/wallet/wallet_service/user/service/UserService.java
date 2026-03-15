@@ -1,9 +1,13 @@
 package com.wallet.wallet_service.user.service;
 
-import com.wallet.wallet_service.user.model.SignupRequestDTO;
-import com.wallet.wallet_service.user.model.SignupResponseDTO;
+import com.wallet.wallet_service.user.dto.LoginRequest;
+import com.wallet.wallet_service.user.dto.LoginResponse;
+import com.wallet.wallet_service.user.dto.SignupRequest;
+import com.wallet.wallet_service.user.dto.SignupResponse;
 
 public interface UserService
 {
-    SignupResponseDTO signup(SignupRequestDTO signupRequest);
+    SignupResponse signup(SignupRequest signupRequest);
+
+    LoginResponse login(LoginRequest loginRequest);
 }

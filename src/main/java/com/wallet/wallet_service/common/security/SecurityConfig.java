@@ -1,4 +1,4 @@
-package com.wallet.wallet_service.common.config;
+package com.wallet.wallet_service.common.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +21,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())  // disable for APIs
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().authenticated()
+                    .requestMatchers("/users/**").permitAll()
+                    .anyRequest().permitAll()
                 )
                 .httpBasic(Customizer.withDefaults());
 

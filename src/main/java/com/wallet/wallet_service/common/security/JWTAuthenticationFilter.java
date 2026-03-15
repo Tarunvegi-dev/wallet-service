@@ -1,5 +1,6 @@
 package com.wallet.wallet_service.common.security;
 
-public class JWTUtil {
+public class JWTAuthenticationFilter {
+    
     
 }
