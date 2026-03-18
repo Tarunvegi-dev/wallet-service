@@ -1,16 +1,26 @@
 package com.wallet.wallet_service.user.service.Impl;
 
+import java.util.Optional;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.wallet.wallet_service.common.email.EmailService;
 import com.wallet.wallet_service.common.exception.InvalidCredentialsException;
 import com.wallet.wallet_service.common.exception.UserAlreadyExistsException;
 import com.wallet.wallet_service.common.security.JWTService;
+import com.wallet.wallet_service.common.security.OTPService;
+import com.wallet.wallet_service.user.dto.ForgotPasswordRequest;
+import com.wallet.wallet_service.user.dto.ForgotPasswordResponse;
 import com.wallet.wallet_service.user.dto.LoginRequest;
 import com.wallet.wallet_service.user.dto.LoginResponse;
 import com.wallet.wallet_service.user.dto.SignupRequest;
 import com.wallet.wallet_service.user.dto.SignupResponse;
+import com.wallet.wallet_service.user.dto.UpdatePasswordRequest;
+import com.wallet.wallet_service.user.dto.UpdatePasswordResponse;
+import com.wallet.wallet_service.user.dto.VerifyOTPRequest;
+import com.wallet.wallet_service.user.dto.VerifyOTPResponse;
 import com.wallet.wallet_service.user.model.User;
 import com.wallet.wallet_service.user.repository.UserRepository;
 import com.wallet.wallet_service.user.service.UserService;
@@ -28,6 +38,8 @@ public class UserServiceImpl implements UserService
     final ModelMapper objModelMapper;
     final PasswordEncoder passwordEncoder;
     final JWTService jwtService;
+    final OTPService otpService;
+    final EmailService emailService;
     
     @Override
     public SignupResponse signup(SignupRequest signupRequest)
@@ -54,7 +66,48 @@ public class UserServiceImpl implements UserService
             return loginResponse;
         }else{
             throw new InvalidCredentialsException("Invalid email or password");
-        }
-                                  
+        }                        
     }
+
+    @Override
+    public ForgotPasswordResponse requestOTP(ForgotPasswordRequest forgotPasswordRequest) {
+        String email = forgotPasswordRequest.getEmail();
+        Optional<User> user = userRepository.findByEmail(email);
+        if(user.isPresent()){
+            String otp = otpService.generateAndStoreOTP(email);
+            emailService.SendOTP(email, otp);
+        }
+        return new ForgotPasswordResponse(email, "If account exists, OTP sent");
+    }
+
+    @Override
+    public VerifyOTPResponse verifyOTP(VerifyOTPRequest verifyOTPRequest) {
+        VerifyOTPResponse verifyOTPResponse = new VerifyOTPResponse();
+        verifyOTPResponse.setEmail(verifyOTPRequest.getEmail());
+        if(otpService.verifyOTP(verifyOTPRequest.getEmail(), verifyOTPRequest.getOtp())){
+            verifyOTPResponse.setMesssage("OTP Verified Successfully!!");
+        }else{            
+            verifyOTPResponse.setMesssage("Invalid OTP!");
+        }
+        return verifyOTPResponse;
+    }
+
+    @Override
+    public UpdatePasswordResponse updatePassword(UpdatePasswordRequest updatePasswordRequest) {
+        UpdatePasswordResponse updatePasswordResponse = new UpdatePasswordResponse();
+        updatePasswordResponse.setEmail(updatePasswordRequest.getEmail());
+        if(otpService.isOTPVerified(updatePasswordRequest.getEmail())){
+            otpService.clearOTP(updatePasswordRequest.getEmail());
+            User user = userRepository.findByEmail(updatePasswordRequest.getEmail())
+                                      .orElseThrow(() -> new InvalidCredentialsException("User not found with email "+updatePasswordRequest.getEmail()));
+            String encodedPassword = passwordEncoder.encode(updatePasswordRequest.getNewPassword());
+            user.setPassword(encodedPassword);
+            userRepository.save(user);
+            updatePasswordResponse.setMessage("Password updated successfully!!");
+        }else{
+            updatePasswordResponse.setMessage("OTP not verified or expired!!");
+        }
+        return updatePasswordResponse;
+    }
+
 }
