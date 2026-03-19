@@ -1,10 +1,9 @@
 package com.wallet.wallet_service.common.exception.advices;
 
+import com.wallet.wallet_service.common.exception.*;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.wallet.wallet_service.common.dto.ApiErrorDTO;
-import com.wallet.wallet_service.common.exception.InvalidCredentialsException;
-import com.wallet.wallet_service.common.exception.UserAlreadyExistsException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +32,7 @@ public class GlobalExceptionHandler
     }
 
     @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<ApiErrorDTO> handleResourceNotFoundException(UserAlreadyExistsException e)
+    public ResponseEntity<ApiErrorDTO> handleUserAlreadyExistsException(UserAlreadyExistsException e)
     {
         apiErrorDTO = ApiErrorDTO.builder()
                 .status(HttpStatus.CONFLICT)
@@ -65,6 +64,36 @@ public class GlobalExceptionHandler
                 .status(HttpStatus.BAD_REQUEST)
                 .message("Input Validation Failed")
                 .subErrors(lstErrors).build();
+        return new ResponseEntity<>(apiErrorDTO, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ApiErrorDTO> handleUserNotFoundException(UserNotFoundException e)
+    {
+         apiErrorDTO = ApiErrorDTO.builder()
+                .status(HttpStatus.NOT_FOUND)
+                .message(e.getMessage()).build();
+
+        return new ResponseEntity<>(apiErrorDTO, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(InvalidPasswordException.class)
+    public ResponseEntity<ApiErrorDTO> handleInvalidPasswordException(InvalidPasswordException e)
+    {
+        apiErrorDTO = ApiErrorDTO.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .message(e.getMessage()).build();
+
+        return new ResponseEntity<>(apiErrorDTO, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(SamePasswordException.class)
+    public ResponseEntity<ApiErrorDTO> handleSamePasswordException(SamePasswordException e)
+    {
+        apiErrorDTO = ApiErrorDTO.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .message(e.getMessage()).build();
+
         return new ResponseEntity<>(apiErrorDTO, HttpStatus.BAD_REQUEST);
     }
 }

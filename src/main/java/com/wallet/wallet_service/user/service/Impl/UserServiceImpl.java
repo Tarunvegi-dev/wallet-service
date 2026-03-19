@@ -1,16 +1,12 @@
 package com.wallet.wallet_service.user.service.Impl;
 
+import com.wallet.wallet_service.common.exception.*;
+import com.wallet.wallet_service.user.dto.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.wallet.wallet_service.common.exception.InvalidCredentialsException;
-import com.wallet.wallet_service.common.exception.UserAlreadyExistsException;
 import com.wallet.wallet_service.common.security.JWTService;
-import com.wallet.wallet_service.user.dto.LoginRequest;
-import com.wallet.wallet_service.user.dto.LoginResponse;
-import com.wallet.wallet_service.user.dto.SignupRequest;
-import com.wallet.wallet_service.user.dto.SignupResponse;
 import com.wallet.wallet_service.user.model.User;
 import com.wallet.wallet_service.user.repository.UserRepository;
 import com.wallet.wallet_service.user.service.UserService;
@@ -18,6 +14,11 @@ import com.wallet.wallet_service.user.service.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.util.ReflectionUtils;
+
+import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -57,4 +58,47 @@ public class UserServiceImpl implements UserService
         }
                                   
     }
+
+    public Optional<UserDTO> getUserById(Long userId)
+    {
+        if(!userRepository.existsById(userId))
+            throw new UserNotFoundException("User not found with ID "+userId);
+        return userRepository.findById(userId)
+                .map(objUser -> objModelMapper.map(objUser, UserDTO.class));
+    }
+
+    public Boolean resetUserPassword(Long userId, ResetPasswordRequest resetPasswordRequest)
+    {
+        if(!userRepository.existsById(userId))
+            throw new UserNotFoundException("User not found with ID "+userId);
+        User user = userRepository.findById(userId).orElseThrow();
+        if(!passwordEncoder.matches(resetPasswordRequest.getOldPassword(), user.getPassword()))
+            throw new InvalidPasswordException("Invalid Current Password!!!");
+        if(resetPasswordRequest.getOldPassword().equals(resetPasswordRequest.getNewPassword()))
+            throw new SamePasswordException("Current Password and New Password can not be same");
+        user.setPassword(passwordEncoder.encode(resetPasswordRequest.getNewPassword()));
+        userRepository.save(user);
+        return true;
+    }
+
+    @Override
+    public UserDTO updateUserById(Long userId, Map<String, Object> updates)
+    {
+        if(!userRepository.existsById(userId))
+            throw new UserNotFoundException("User not found with ID "+userId);
+        UserDTO UpdatedUserDTO = new UserDTO();
+        User currentUser = userRepository.findById(userId).orElse(null);
+        if(currentUser!=null)
+        {
+            updates.forEach((field, value) -> {
+                Field fieldToBeUpdated = ReflectionUtils.findField(User.class, field);
+                fieldToBeUpdated.setAccessible(true);
+                ReflectionUtils.setField(fieldToBeUpdated, currentUser, value);
+            });
+            UpdatedUserDTO = objModelMapper.map(userRepository.save(currentUser),UserDTO.class);
+        }
+        return UpdatedUserDTO;
+    }
+
+
 }
