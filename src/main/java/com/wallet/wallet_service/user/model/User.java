@@ -8,11 +8,13 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 
-@Data
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@Entity
 @Table(name = "users")
 public class User
 {

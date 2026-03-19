@@ -5,6 +5,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.wallet.wallet_service.user.dto.ForgotPasswordRequest;
+import com.wallet.wallet_service.user.dto.ForgotPasswordResponse;
+import com.wallet.wallet_service.user.dto.LoginRequest;
+import com.wallet.wallet_service.user.dto.LoginResponse;
+import com.wallet.wallet_service.user.dto.SignupRequest;
+import com.wallet.wallet_service.user.dto.SignupResponse;
+import com.wallet.wallet_service.user.dto.UpdatePasswordRequest;
+import com.wallet.wallet_service.user.dto.UpdatePasswordResponse;
+import com.wallet.wallet_service.user.dto.VerifyOTPRequest;
+import com.wallet.wallet_service.user.dto.VerifyOTPResponse;
 import com.wallet.wallet_service.user.service.UserService;
 
 import jakarta.validation.Valid;
@@ -29,6 +39,21 @@ public class UserController
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest loginRequest) {
         return ResponseEntity.status(HttpStatus.OK).body(userService.login(loginRequest));
+    }
+
+    @PostMapping("/forgot-password/request-otp")
+    public ResponseEntity<ForgotPasswordResponse> requestOTP(@RequestBody @Valid ForgotPasswordRequest forgotPasswordRequest){
+        return ResponseEntity.status(HttpStatus.OK).body(userService.requestOTP(forgotPasswordRequest));
+    }
+
+    @PostMapping("/forgot-password/verify-otp")
+    public ResponseEntity<VerifyOTPResponse> verifyOTP(@RequestBody @Valid VerifyOTPRequest verifyOTPRequest){
+        return ResponseEntity.status(HttpStatus.OK).body(userService.verifyOTP(verifyOTPRequest));
+    }
+
+    @PostMapping("/forgot-password/update-password")
+    public ResponseEntity<UpdatePasswordResponse> updatePassword(@RequestBody @Valid UpdatePasswordRequest updatePasswordRequest){
+        return ResponseEntity.status(HttpStatus.OK).body(userService.updatePassword(updatePasswordRequest));
     }
 
     @GetMapping("/{userId}")
