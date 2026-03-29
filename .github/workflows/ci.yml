@@ -32,8 +32,8 @@ jobs:
       #Only push on main
       - name: Build Docker Image
         if: github.ref == 'refs/heads/main'
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/wallet-service:latest .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/wallet-service:${{ github.sha }} .
 
       - name: Push Docker Image
         if: github.ref == 'refs/heads/main'
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/wallet-service:latest
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/wallet-service:${{ github.sha }}
