@@ -4,4 +4,4 @@ spring:
   profiles:
     active: local
   flyway:
-    enabled: true
+    enabled: false
