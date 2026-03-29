@@ -43,6 +43,6 @@ Thumbs.db
 # Environment
 .env
 .env.*
-application-local.yml
 
 .DS_Store
+docker-compose.yaml
