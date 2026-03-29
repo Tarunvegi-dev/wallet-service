@@ -1,26 +1,32 @@
 package com.wallet.wallet_service.user.service.Impl;
 
-import com.wallet.wallet_service.common.exception.*;
-import com.wallet.wallet_service.user.dto.*;
+import java.lang.reflect.Field;
+import java.util.Map;
 import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ReflectionUtils;
 
 import com.wallet.wallet_service.common.email.EmailService;
 import com.wallet.wallet_service.common.exception.InvalidCredentialsException;
+import com.wallet.wallet_service.common.exception.InvalidPasswordException;
+import com.wallet.wallet_service.common.exception.SamePasswordException;
 import com.wallet.wallet_service.common.exception.UserAlreadyExistsException;
+import com.wallet.wallet_service.common.exception.UserNotFoundException;
 import com.wallet.wallet_service.common.security.JWTService;
 import com.wallet.wallet_service.common.security.OTPService;
 import com.wallet.wallet_service.user.dto.ForgotPasswordRequest;
 import com.wallet.wallet_service.user.dto.ForgotPasswordResponse;
 import com.wallet.wallet_service.user.dto.LoginRequest;
 import com.wallet.wallet_service.user.dto.LoginResponse;
+import com.wallet.wallet_service.user.dto.ResetPasswordRequest;
 import com.wallet.wallet_service.user.dto.SignupRequest;
 import com.wallet.wallet_service.user.dto.SignupResponse;
 import com.wallet.wallet_service.user.dto.UpdatePasswordRequest;
 import com.wallet.wallet_service.user.dto.UpdatePasswordResponse;
+import com.wallet.wallet_service.user.dto.UserDTO;
 import com.wallet.wallet_service.user.dto.VerifyOTPRequest;
 import com.wallet.wallet_service.user.dto.VerifyOTPResponse;
 import com.wallet.wallet_service.user.model.User;
@@ -30,11 +36,6 @@ import com.wallet.wallet_service.user.service.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.util.ReflectionUtils;
-
-import java.lang.reflect.Field;
-import java.util.Map;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
