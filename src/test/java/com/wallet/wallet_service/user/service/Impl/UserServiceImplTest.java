@@ -1,15 +1,16 @@
 package com.wallet.wallet_service.user.service.Impl;
 
-import com.wallet.wallet_service.common.email.EmailService;
-import com.wallet.wallet_service.common.exception.InvalidCredentialsException;
-import com.wallet.wallet_service.common.exception.UserAlreadyExistsException;
-import com.wallet.wallet_service.common.exception.UserNotFoundException;
-import com.wallet.wallet_service.common.security.JWTService;
-import com.wallet.wallet_service.common.security.OTPService;
-import com.wallet.wallet_service.user.dto.*;
-import com.wallet.wallet_service.user.model.User;
-import com.wallet.wallet_service.user.repository.UserRepository;
-import org.junit.jupiter.api.BeforeAll;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,14 +26,18 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import com.wallet.wallet_service.common.email.EmailService;
+import com.wallet.wallet_service.common.exception.InvalidCredentialsException;
+import com.wallet.wallet_service.common.exception.UserAlreadyExistsException;
+import com.wallet.wallet_service.common.exception.UserNotFoundException;
+import com.wallet.wallet_service.common.security.JWTService;
+import com.wallet.wallet_service.common.security.OTPService;
+import com.wallet.wallet_service.user.dto.LoginRequest;
+import com.wallet.wallet_service.user.dto.SignupRequest;
+import com.wallet.wallet_service.user.dto.SignupResponse;
+import com.wallet.wallet_service.user.dto.UserDTO;
+import com.wallet.wallet_service.user.model.User;
+import com.wallet.wallet_service.user.repository.UserRepository;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
