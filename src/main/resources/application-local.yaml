@@ -23,6 +23,8 @@ spring:
           auth: true
           starttls:
             enable: true
+  flyway:
+    enabled: true
             
 jwt:
   token:
