@@ -39,10 +39,8 @@ import com.wallet.wallet_service.user.dto.UserDTO;
 import com.wallet.wallet_service.user.model.User;
 import com.wallet.wallet_service.user.repository.UserRepository;
 
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+
 @ExtendWith(MockitoExtension.class)
-@ActiveProfiles("test")
 class UserServiceImplTest
 {
     @Mock
