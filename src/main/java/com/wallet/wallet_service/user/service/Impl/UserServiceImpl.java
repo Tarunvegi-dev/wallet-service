@@ -119,6 +119,10 @@ public class UserServiceImpl implements UserService
         User currentUser = userRepository.findById(userId).orElse(null);
         if(currentUser!=null)
         {
+            if(updates.get("email")!= null || updates.get("password")!= null)
+                throw new IllegalArgumentException("Email or password of user can not be updated from here");
+
+
             updates.forEach((field, value) -> {
                 Field fieldToBeUpdated = ReflectionUtils.findField(User.class, field);
                 fieldToBeUpdated.setAccessible(true);

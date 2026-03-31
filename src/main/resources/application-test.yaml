@@ -20,11 +20,11 @@ spring:
     properties:
       mail:
         smtp:
-          auth: true
+          auth: false
           starttls:
-            enable: true
+            enable: false
   flyway:
-    enabled: true
+    enabled: false
             
 jwt:
   token:

@@ -32,7 +32,8 @@ public class OTPService {
     public Boolean verifyOTP(String email, String OTP){
         if(otpStore.containsKey(email)){
             OTPData otpData = otpStore.get(email);
-            if(otpData.getIsVerified()) return true;
+            if(otpData.getIsVerified())
+                return true;
             Date expDate = otpData.getOtpExpiry();
             if(OTP.equals(otpData.getOtp()) && expDate.after(new Date())){
                 otpData.setIsVerified(true);

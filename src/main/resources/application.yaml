@@ -3,5 +3,3 @@ spring:
     name: wallet-service
   profiles:
     active: local
-  flyway:
-    enabled: true
