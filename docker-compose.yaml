@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: wallet_postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d wallet_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_DB: wallet_db
+      POSTGRES_USER: ${DB_USERNAME:-wallet_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-wallet_pass}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  wallet-service:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    image: tarunkumar3/wallet-service:4475d47eb2cb340215321b1f5b49072ecd1935b8
+    container_name: wallet_service
+    depends_on:
+      - postgres
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/wallet_db
+      DB_USERNAME: ${DB_USERNAME:-wallet_user}
+      DB_PASSWORD: ${DB_PASSWORD:-wallet_pass}
+      JWT_SECRET: ${JWT_SECRET}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
