@@ -1,0 +1,1 @@
+ALTER TABLE wallets ALTER COLUMN version TYPE bigint USING version::bigint;

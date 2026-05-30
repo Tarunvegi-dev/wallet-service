@@ -20,10 +20,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    image: tarunkumar3/wallet-service:4475d47eb2cb340215321b1f5b49072ecd1935b8
+    image: tarunkumar3/wallet-service:7b27e96bb7be5d7ac6ae99e15aff1e4a07926e9d
     container_name: wallet_service
-    depends_on:
-      - postgres
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/wallet_db
       DB_USERNAME: ${DB_USERNAME:-wallet_user}
