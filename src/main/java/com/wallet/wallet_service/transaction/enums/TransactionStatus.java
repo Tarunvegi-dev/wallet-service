@@ -4,5 +4,7 @@ public enum TransactionStatus {
     SUCCESS,
     PENDING,
     FAILED,
-    REFUNDED
+    REFUNDED,
+    PAYMENT_UNKNOWN,
+    COMPENSATION_PENDING
 }

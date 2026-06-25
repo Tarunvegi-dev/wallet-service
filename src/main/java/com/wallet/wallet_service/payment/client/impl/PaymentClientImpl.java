@@ -1,6 +1,9 @@
 package com.wallet.wallet_service.payment.client.impl;
 
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import com.wallet.wallet_service.payment.client.PaymentClient;
@@ -16,7 +19,13 @@ public class PaymentClientImpl implements PaymentClient{
     }
 
     @Override
+    @Retryable(
+        retryFor = { ResourceAccessException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 1000)
+    )
     public PaymentResponse processPayment(PaymentRequest paymentRequest) {
+        System.out.println("Calling payment service");
         return restClient
         .post()
         .uri("/payments/process")

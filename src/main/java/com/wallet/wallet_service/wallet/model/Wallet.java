@@ -37,7 +37,13 @@ public class Wallet {
     Long walletId;
 
     @Column(nullable = false, precision = 19, scale = 2)
-    BigDecimal balance;
+    BigDecimal totalBalance;
+
+    @Column(nullable = false, precision = 19, scale = 2)
+    BigDecimal availableBalance;
+
+    @Column(nullable = false, precision = 19, scale = 2)
+    BigDecimal reservedBalance;
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -57,11 +63,23 @@ public class Wallet {
     @Version
     Long version;
 
-    public void credit(BigDecimal amount) {
-        this.balance = this.balance.add(amount);
+    public void updateTotalBalance(BigDecimal amount){
+        this.totalBalance = amount;
     }
 
-    public void debit(BigDecimal amount) {
-        this.balance = this.balance.subtract(amount);
+    public void creditAvailableBalance(BigDecimal amount) {
+        this.availableBalance = this.availableBalance.add(amount);
+    }
+
+    public void debitAvailableBalance(BigDecimal amount) {
+        this.availableBalance = this.availableBalance.subtract(amount);
+    }
+
+    public void creditReservedBalance(BigDecimal amount) {
+        this.reservedBalance = this.reservedBalance.add(amount);
+    }
+
+    public void debitReservedBalance(BigDecimal amount) {
+        this.reservedBalance = this.reservedBalance.subtract(amount);
     }
 }

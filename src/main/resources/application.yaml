@@ -7,6 +7,3 @@ spring:
     hikari:
       initialization-fail-timeout: 60000
 
-payment:
-  service:
-    url: http://localhost:8081
