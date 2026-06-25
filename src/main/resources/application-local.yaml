@@ -23,6 +23,12 @@ spring:
           auth: true
           starttls:
             enable: true
+
+  http:
+    client:
+      connection-timeout: 5000
+      read-timeout: 10000
+
   flyway:
     enabled: true
             
@@ -30,3 +36,8 @@ jwt:
   token:
     secret: ${JWT_SECRET}
     expiration: 3600000
+
+payment:
+  service:
+    url: http://localhost:8081
+

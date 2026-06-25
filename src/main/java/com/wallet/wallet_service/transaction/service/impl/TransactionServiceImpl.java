@@ -1,15 +1,18 @@
 package com.wallet.wallet_service.transaction.service.impl;
 
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
 import com.wallet.wallet_service.common.exception.InvalidTransactionException;
 import com.wallet.wallet_service.common.exception.TransactionNotFoundException;
 import com.wallet.wallet_service.common.exception.WalletNotFoundException;
 import com.wallet.wallet_service.payment.client.PaymentClient;
+import com.wallet.wallet_service.payment.client.dto.CompensatePaymentRequest;
 import com.wallet.wallet_service.payment.client.dto.PaymentRequest;
 import com.wallet.wallet_service.payment.client.dto.PaymentResponse;
 import com.wallet.wallet_service.transaction.dto.CreateTransactionRequest;
 import com.wallet.wallet_service.transaction.dto.CreateTransactionResponse;
+import com.wallet.wallet_service.transaction.dto.GetTransactionResponse;
 import com.wallet.wallet_service.transaction.enums.TransactionStatus;
 import com.wallet.wallet_service.transaction.enums.TransactionType;
 import com.wallet.wallet_service.transaction.model.Transaction;
@@ -18,6 +21,8 @@ import com.wallet.wallet_service.transaction.service.TransactionService;
 import com.wallet.wallet_service.wallet.model.Wallet;
 import com.wallet.wallet_service.wallet.service.WalletService;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class TransactionServiceImpl implements TransactionService{
     
@@ -25,6 +30,7 @@ public class TransactionServiceImpl implements TransactionService{
     private final TransactionRepository transactionRepository;
     private final PaymentClient paymentClient;
     private final TransactionPersistenceServiceImpl transactionPersistenceServiceImpl;
+    private static final String COMPENSATION_QUEUE = "compensation-completed";
 
     public TransactionServiceImpl(WalletService walletService, TransactionRepository transactionRepository, PaymentClient paymentClient, TransactionPersistenceServiceImpl transactionPersistenceServiceImpl){
         this.transactionRepository = transactionRepository;
@@ -32,6 +38,34 @@ public class TransactionServiceImpl implements TransactionService{
         this.paymentClient = paymentClient;
         this.transactionPersistenceServiceImpl = transactionPersistenceServiceImpl;
     }
+
+    @RabbitListener(queues = COMPENSATION_QUEUE)
+    @Transactional
+    public void compensationCompleted(CompensatePaymentRequest compensatePaymentRequest){
+        Transaction transaction = transactionRepository.findById(compensatePaymentRequest.getTransactionId())
+                                        .orElseThrow(() -> new TransactionNotFoundException("Invalid reference transaction id")); 
+        TransactionType transactionType = transaction.getTransactionType();
+        transaction.setTransactionStatus(TransactionStatus.FAILED);
+        Wallet wallet = walletService.getWalletByUserId(compensatePaymentRequest.getUserId()).orElseThrow(() -> new WalletNotFoundException("Wallet doesn't exist for you, please create a wallet before doing the transaction"));
+        if(transactionType == TransactionType.REFUND){
+                Transaction originalTransaction = transactionRepository.findById(transaction.getReferenceTransactionId())
+                                .orElseThrow(() -> new TransactionNotFoundException("Invalid reference transaction id"));
+
+            if(originalTransaction.getTransactionType() == TransactionType.CREDIT){
+                walletService.credit(wallet.getWalletId(), originalTransaction.getAmount());
+            }else{
+                walletService.debit(wallet.getWalletId(), originalTransaction.getAmount(), true);
+            }
+        }else{
+            if(transactionType == TransactionType.DEBIT){
+                walletService.credit(wallet.getWalletId(), transaction.getAmount());
+            }else{
+                walletService.debit(wallet.getWalletId(), transaction.getAmount(), true);
+            }   
+        }
+        transactionRepository.save(transaction);
+    }
+
 
     @Override
     public CreateTransactionResponse createTransaction(Long userId, CreateTransactionRequest createTransactionRequest) {
@@ -54,24 +88,28 @@ public class TransactionServiceImpl implements TransactionService{
         }else{
             transaction = transactionPersistenceServiceImpl.createPendingTransaction(createTransactionRequest.getAmount(), createTransactionRequest.getPaymentMode(), wallet.getWalletId(), null, transactionType);
         }
-
-        //call external payment service
-        PaymentRequest paymentRequest = new PaymentRequest();
-        paymentRequest.setAmount(transaction.getAmount());
-        paymentRequest.setPaymentMode(transaction.getPaymentMode());
-        paymentRequest.setTransactionId(transaction.getTransactionId());
-        paymentRequest.setTransactionType(transactionType);
-        PaymentResponse paymentResponse = new PaymentResponse();
-        paymentResponse = paymentClient.processPayment(paymentRequest);
-     
-        //update wallet balance and mark transaction status according to payment response
-        transaction = transactionPersistenceServiceImpl.updateWalletBalanceAndMarkTransactionStatus(createTransactionRequest, wallet, transactionType, transaction, paymentResponse);
         
         CreateTransactionResponse createTransactionResponse = new CreateTransactionResponse();
         createTransactionResponse.setTransactionid(transaction.getTransactionId());
-        createTransactionResponse.setTransactionStatus(transaction.getTransactionStatus());
+        try{
+            //call external payment service
+            PaymentRequest paymentRequest = new PaymentRequest();
+            paymentRequest.setAmount(transaction.getAmount());
+            paymentRequest.setPaymentMode(transaction.getPaymentMode());
+            paymentRequest.setTransactionId(transaction.getTransactionId());
+            paymentRequest.setTransactionType(transactionType);
+            PaymentResponse paymentResponse = new PaymentResponse();
+            paymentResponse = paymentClient.processPayment(paymentRequest);
 
+            //update wallet balance and mark transaction status according to payment response
+            transaction = transactionPersistenceServiceImpl.updateWalletBalanceAndMarkTransactionStatus(createTransactionRequest, wallet, transactionType, transaction, paymentResponse);
+        }catch(Exception e){
+            transaction.setTransactionStatus(TransactionStatus.PAYMENT_UNKNOWN);
+            transactionRepository.save(transaction);
+        }
+        createTransactionResponse.setTransactionStatus(transaction.getTransactionStatus());
         return createTransactionResponse;
+     
     }
 
 
@@ -92,6 +130,22 @@ public class TransactionServiceImpl implements TransactionService{
         if(orgTransactionType == TransactionType.DEBIT && wallet.getWalletId() != originalTransaction.getSenderWalletId()){
             throw new InvalidTransactionException("Reference transaction doesn't belong to your wallet");
         }
+        if(orgTransactionType == TransactionType.CREDIT){
+            walletService.validateBalance(wallet.getWalletId(), originalTransaction.getAmount());
+        }
+    }
+
+    @Override
+    public GetTransactionResponse getTransaction(Long transctionId) {
+        GetTransactionResponse response = new GetTransactionResponse();
+        Transaction transaction = transactionRepository.findById(transctionId).orElseThrow(() -> new InvalidTransactionException("invalid transaction id"));
+        response.setAmount(transaction.getAmount());
+        response.setPaymentMode(transaction.getPaymentMode());
+        response.setReferenceTransactionId(transaction.getReferenceTransactionId());
+        response.setTransactionId(transctionId);
+        response.setTransactionType(transaction.getTransactionType());
+        response.setTransactionStatus(transaction.getTransactionStatus());
+        return response;
     }
 
 
