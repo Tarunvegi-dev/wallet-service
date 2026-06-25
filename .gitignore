@@ -45,3 +45,5 @@ Thumbs.db
 .env.*
 
 .DS_Store
+ssh-key-2026-04-05.key
+docker-compose.local.yaml

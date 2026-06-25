@@ -3,3 +3,10 @@ spring:
     name: wallet-service
   profiles:
     active: local
+  datasource:
+    hikari:
+      initialization-fail-timeout: 60000
+
+payment:
+  service:
+    url: http://localhost:8081

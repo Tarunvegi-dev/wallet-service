@@ -1,0 +1,1 @@
+Alter table wallets ALTER COLUMN balance TYPE numeric(19, 2) USING balance::numeric(19, 2);
