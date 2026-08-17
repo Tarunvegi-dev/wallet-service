@@ -10,7 +10,7 @@ import com.wallet.wallet_service.transaction.model.Transaction;
 import com.wallet.wallet_service.wallet.model.Wallet;
 
 public interface TransactionPersistenceService {
-     public Transaction createPendingTransaction(BigDecimal amount, PaymentMode paymentMode, Long walletId, Long referenceTransactionId, TransactionType transactionType);
+     public Transaction createPendingTransaction(BigDecimal amount, PaymentMode paymentMode, Long walletId, Long referenceTransactionId, TransactionType transactionType, String idempotencyKey, String requestHash);
 
-     public Transaction updateWalletBalanceAndMarkTransactionStatus(CreateTransactionRequest createTransactionRequest, Wallet wallet, TransactionType transactionType, Transaction transaction, PaymentResponse paymentResponse); 
+     public Transaction updateWalletBalanceAndMarkTransactionStatus(CreateTransactionRequest createTransactionRequest, Wallet wallet, Transaction transaction, PaymentResponse paymentResponse); 
 }

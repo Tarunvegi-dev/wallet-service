@@ -42,11 +42,14 @@ public class WalletServiceImpl implements WalletService{
         Wallet wallet = new Wallet();
         wallet.setStatus(WalletStatus.ACTIVE);
         wallet.setUserId(userId);
+        wallet.setAvailableBalance(BigDecimal.ZERO);
+        wallet.setTotalBalance(BigDecimal.ZERO);
+        wallet.setReservedBalance(BigDecimal.ZERO);
         walletRepository.save(wallet);
 
         CreateWalletResponse walletResponse = new CreateWalletResponse();
         walletResponse.setWalletId(wallet.getWalletId());
-        walletResponse.setBalance(wallet.getAvailableBalance());
+        walletResponse.setBalance(BigDecimal.ZERO);
         walletResponse.setStatus(wallet.getStatus());
         return walletResponse;
     }
@@ -57,6 +60,7 @@ public class WalletServiceImpl implements WalletService{
             .orElseThrow(() -> new WalletNotFoundException("Wallet does not exists with this walletId"));
         wallet.creditAvailableBalance(amount);
         wallet.updateTotalBalance(wallet.getAvailableBalance().add(wallet.getReservedBalance()));
+        log.info("Wallet credited ={} amount={}", walletId, amount);
         walletRepository.save(wallet);
     }
     
@@ -64,6 +68,7 @@ public class WalletServiceImpl implements WalletService{
         Wallet wallet = walletRepository.findById(walletId)
             .orElseThrow(() -> new WalletNotFoundException("Wallet does not exists with this walletId"));
         if(wallet.getAvailableBalance().compareTo(amount) < 0){
+            log.warn("Transaction rejected due to insufficient balance in the wallet ={}", walletId);
             throw new InsufficientFundsException("Insufficient balance in the wallet");
         }
         reserveBalance(wallet, amount);
@@ -73,6 +78,7 @@ public class WalletServiceImpl implements WalletService{
         wallet.debitAvailableBalance(amount);
         wallet.creditReservedBalance(amount);
         wallet.updateTotalBalance(wallet.getAvailableBalance().add(wallet.getReservedBalance()));
+        log.info("Wallet Reserved ={} amount={}", wallet.getWalletId(), amount);
     }
 
     public void releaseReserveBalance(Long walletId, BigDecimal amount){
@@ -82,6 +88,7 @@ public class WalletServiceImpl implements WalletService{
         wallet.debitReservedBalance(amount);
         wallet.creditAvailableBalance(amount);
         wallet.updateTotalBalance(wallet.getAvailableBalance().add(wallet.getReservedBalance()));
+        log.info("Wallet Reserve released ={} amount={}", walletId, amount);
     }
 
     @Override
@@ -94,6 +101,7 @@ public class WalletServiceImpl implements WalletService{
             wallet.debitReservedBalance(amount);
         }
         wallet.updateTotalBalance(wallet.getAvailableBalance().add(wallet.getReservedBalance()));
+        log.info("Wallet debited ={} amount={}", amount, walletId);
         walletRepository.save(wallet);
     }
 

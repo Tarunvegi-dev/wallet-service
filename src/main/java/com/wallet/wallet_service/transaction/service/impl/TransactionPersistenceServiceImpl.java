@@ -22,8 +22,10 @@ import com.wallet.wallet_service.wallet.model.Wallet;
 import com.wallet.wallet_service.wallet.service.WalletService;
 
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class TransactionPersistenceServiceImpl implements TransactionPersistenceService{
     private final TransactionRepository transactionRepository;
     private final WalletService walletService;
@@ -40,36 +42,39 @@ public class TransactionPersistenceServiceImpl implements TransactionPersistence
 
     @Transactional
     @Override
-    public Transaction createPendingTransaction(BigDecimal amount, PaymentMode paymentMode, Long walletId, Long referenceTransactionId, TransactionType transactionType) {
-            Transaction transaction = new Transaction();
-            transaction.setAmount(amount);
-            transaction.setPaymentMode(paymentMode);
-            if(transactionType == TransactionType.DEBIT){
+    public Transaction createPendingTransaction(BigDecimal amount, PaymentMode paymentMode, Long walletId, Long referenceTransactionId, TransactionType transactionType, String idempotencyKey, String requestHash) {
+        Transaction transaction = new Transaction();
+        transaction.setAmount(amount);
+        transaction.setPaymentMode(paymentMode);
+        if(transactionType == TransactionType.DEBIT){
+            transaction.setSenderWalletId(walletId);
+        }else if(transactionType == TransactionType.CREDIT){
+            transaction.setReceiverWalletId(walletId);
+        }else{
+            Transaction originalTransaction = transactionRepository.findById(referenceTransactionId)
+            .orElseThrow(() -> new TransactionNotFoundException("Invalid reference transaction id"));
+            if(originalTransaction.getTransactionType() == TransactionType.CREDIT){
                 transaction.setSenderWalletId(walletId);
-            }else if(transactionType == TransactionType.CREDIT){
-                transaction.setReceiverWalletId(walletId);
             }else{
-                Transaction originalTransaction = transactionRepository.findById(referenceTransactionId)
-                                                .orElseThrow(() -> new TransactionNotFoundException("Invalid reference transaction id"));
-                if(originalTransaction.getTransactionType() == TransactionType.CREDIT){
-                    transaction.setSenderWalletId(walletId);
-                }else{
-                    transaction.setReceiverWalletId(walletId);
-                }
-                transaction.setReferenceTransactionId(referenceTransactionId);
+                transaction.setReceiverWalletId(walletId);
             }
-            transaction.setTransactionStatus(TransactionStatus.PENDING);
-            transaction.setTransactionType(transactionType);
-            transactionRepository.save(transaction);
-            return transaction;
+            transaction.setReferenceTransactionId(referenceTransactionId);
+        }
+        transaction.setTransactionStatus(TransactionStatus.PENDING);
+        transaction.setTransactionType(transactionType);
+        transaction.setIdempotencyKey(idempotencyKey);
+        transaction.setRequestHash(requestHash);
+        transactionRepository.save(transaction);
+        log.info("Created pending transaction ={}, type ={}", transaction.getTransactionId(), transactionType);
+        return transaction;
     }
 
     @Override
     @Transactional
-    public Transaction updateWalletBalanceAndMarkTransactionStatus(CreateTransactionRequest createTransactionRequest, Wallet wallet,
-            TransactionType transactionType, Transaction transaction, PaymentResponse paymentResponse) {
-        
+    public Transaction updateWalletBalanceAndMarkTransactionStatus(CreateTransactionRequest createTransactionRequest, Wallet wallet, Transaction transaction, PaymentResponse paymentResponse) {
+        TransactionType transactionType = transaction.getTransactionType();
         if(paymentResponse.getPaymentStatus() == TransactionStatus.FAILED){
+            log.info("Payment failed ={}, type ={}", transaction.getTransactionId(), transaction.getTransactionType());
             transaction.setTransactionStatus(TransactionStatus.FAILED);
             if(transactionType == TransactionType.DEBIT){
                 walletService.releaseReserveBalance(wallet.getWalletId(), createTransactionRequest.getAmount());
@@ -81,8 +86,10 @@ public class TransactionPersistenceServiceImpl implements TransactionPersistence
                     walletService.releaseReserveBalance(wallet.getWalletId(), originalTransaction.getAmount());
                 }
             }
+            log.info("Transaction failed ={}, type = {}", transaction.getTransactionId(), transaction.getTransactionType());
             transactionRepository.save(transaction);
         } else{
+            log.info("Payment completed for transaction={}, type ={}", transaction.getTransactionId(), transaction.getTransactionType());
             try {                
                 if(transactionType == TransactionType.DEBIT){
                     walletService.debit(wallet.getWalletId(), createTransactionRequest.getAmount(), false);
@@ -100,8 +107,10 @@ public class TransactionPersistenceServiceImpl implements TransactionPersistence
                     originalTransaction.setTransactionStatus(TransactionStatus.REFUNDED);
                 }     
                 transaction.setTransactionStatus(TransactionStatus.SUCCESS);   
+                log.info("Transaction completed={}, type ={}", transaction.getTransactionId(), transaction.getTransactionType());
                 transactionRepository.save(transaction);
             } catch (Exception e) {
+                log.warn("Wallet update failed, initiating compensation :{}", transaction.getTransactionId(), e);
                 transaction.setTransactionStatus(TransactionStatus.COMPENSATION_PENDING);
                 transactionRepository.save(transaction);  
 
@@ -116,7 +125,9 @@ public class TransactionPersistenceServiceImpl implements TransactionPersistence
                     outboxEvent.setEventType("compensation-requested");
                     outboxEvent.setPayload(payload);
                     outboxRepository.save(outboxEvent);
+                    log.info("Compensation event stored in outbox ={}", transaction.getTransactionId());
                 }catch(Exception ex){
+                    log.error("Failed to serialize the compensation request transaction={}", transaction.getTransactionId(), ex);
                     throw new RuntimeException("Failed to serialize the compensation request", ex);
                 }
             }

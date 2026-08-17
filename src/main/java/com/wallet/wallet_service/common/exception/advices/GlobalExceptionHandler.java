@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.wallet.wallet_service.common.dto.ApiErrorDTO;
 import com.wallet.wallet_service.common.exception.InsufficientFundsException;
 import com.wallet.wallet_service.common.exception.InvalidCredentialsException;
+import com.wallet.wallet_service.common.exception.InvalidIdempotencyKeyException;
 import com.wallet.wallet_service.common.exception.InvalidPasswordException;
 import com.wallet.wallet_service.common.exception.InvalidTransactionException;
 import com.wallet.wallet_service.common.exception.SamePasswordException;
@@ -159,6 +160,15 @@ public class GlobalExceptionHandler
                       .status(HttpStatus.BAD_REQUEST)
                       .message(e.getMessage()).build();
         return new ResponseEntity<>(apiErrorDTO, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InvalidIdempotencyKeyException.class)
+    public ResponseEntity<ApiErrorDTO> handleInvalidIdempotencyKeyException(InvalidIdempotencyKeyException e){
+        ApiErrorDTO apiErrorDTO = new ApiErrorDTO();
+        apiErrorDTO = ApiErrorDTO.builder()
+                      .status(HttpStatus.CONFLICT)
+                      .message((e.getMessage())).build();
+        return new ResponseEntity<>(apiErrorDTO, HttpStatus.CONFLICT);
     }
 }
 

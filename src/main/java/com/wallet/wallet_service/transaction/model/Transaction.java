@@ -76,4 +76,7 @@ public class Transaction {
 
     @Column(unique = true, name = "idempotency_key")
     String idempotencyKey;
+
+    @Column(name = "request_hash")
+    String requestHash;
 }
